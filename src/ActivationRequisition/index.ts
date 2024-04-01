@@ -49,12 +49,10 @@ interface ActivatedData {
   userAccount?: string;
 }
 
-export interface TransactionInfo {
-  actions: any;
-}
-
-export interface TransactionResult {
-  status: 'approved' | 'rejected' | 'error';
+export interface TransactionMessage {
+  status: 'requesting' | 'approved' | 'rejected' | 'error';
+  actions?: any;
+  dapp?: string;
   result?: any;
 }
 
@@ -118,14 +116,17 @@ export class WaxActivateRequisition {
   public async signTransaction(transaction: any) {
     // const activatedDate = JSON.parse(localStorage.getItem(LS_ACTIVATION_KEY));
     const { token } = this.user;
-    const txInfo: TransactionInfo = {
+    const channelName = `tx_dapp_noti_${this.user.account}`;
+    const txInfo: TransactionMessage = {
+      status: 'requesting',
       actions: transaction,
+      dapp: document.location.host
     };
-    const res = API.graphql(
+    API.graphql(
       graphqlOperation(
         publish2channel,
         {
-          name: `tx_${this.user.account}`,
+          name: channelName,
           data: JSON.stringify(txInfo),
         },
         JSON.stringify({
@@ -153,7 +154,7 @@ export class WaxActivateRequisition {
         const graphqlOption = graphqlOperation(
           query,
           {
-            name: `txres_${this.user.account}`,
+            name: channelName,
           },
           JSON.stringify({
             account: this.user.account,
@@ -167,8 +168,11 @@ export class WaxActivateRequisition {
           graphqlOption,
         ).subscribe({
           next: ({ provider: _, value }) => {
-            const txRes: TransactionResult = JSON.parse(value.data.subscribe2channel.data);
+            const txRes: TransactionMessage = JSON.parse(value.data.subscribe2channel.data);
             switch (txRes.status) {
+              case 'requesting':
+                console.log('tx requesting...');
+                break;
               case 'approved':
                 resolve(txRes);
                 break;
