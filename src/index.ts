@@ -29,6 +29,7 @@ export class WaxJS {
   private readonly feeFallback: boolean;
   private readonly metricURL: string;
   private readonly returnTempAccounts: boolean;
+  private readonly activationEndpoint: string;
 
   private readonly verifyTx: (
     user: ILoginResponse,
@@ -128,6 +129,7 @@ export class WaxJS {
     this.metricURL = metricURL;
     this.verifyTx = verifyTx;
     this.returnTempAccounts = returnTempAccounts;
+    this.activationEndpoint = activationEndpoint;
     if (userAccount && Array.isArray(pubKeys)) {
       // login from constructor
       this.receiveLogin({ account: userAccount, keys: pubKeys });
@@ -177,7 +179,21 @@ export class WaxJS {
     this.user = null;
     this.api = null;
     if (this.signingApi) {
-      this.signingApi.logout();
+      if(this.user?.token) {
+        const myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${this.user.token}`);;
+
+        fetch(`${this.activationEndpoint}/dapp/logout`, {
+          method: "GET",
+          headers: myHeaders,
+          redirect: "follow"
+        })
+          .then((response) => response.text())
+          .then((result) => console.log(result))
+          .catch((error) => console.error(error));
+      } else {
+        this.signingApi.logout();
+      }
     }
   }
 
