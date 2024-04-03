@@ -175,7 +175,7 @@ export class WaxJS {
       json: true,
       code: "registry.wax",
       scope: "registry.wax",
-      table: "chains"
+      table: "chains.a"
     });
 
     return response.rows;
