@@ -4,6 +4,7 @@ import { ModalOpener } from "./../Modal/ModalOpener";
 import { Content } from "./Content";
 import { API, Amplify, graphqlOperation } from 'aws-amplify';
 import { GraphQLSubscription } from '@aws-amplify/api';
+import { v4 as uuidv4 } from 'uuid';
 
 // export const LS_ACTIVATION_KEY = 'dapp_activated';
 
@@ -50,7 +51,8 @@ interface ActivatedData {
 }
 
 export interface TransactionMessage {
-  status: 'requesting' | 'approved' | 'rejected' | 'error';
+  id: string;
+  type: 'requesting' | 'approved' | 'rejected' | 'error' | 'ready' | 'not-ready';
   actions?: any;
   dapp?: string;
   result?: any;
@@ -118,7 +120,8 @@ export class WaxActivateRequisition {
     const { token } = this.user;
     const channelName = `tx_dapp_noti_${this.user.account}`;
     const txInfo: TransactionMessage = {
-      status: 'requesting',
+      id: uuidv4(),
+      type: 'requesting',
       actions: transaction,
       dapp: document.location.host
     };
@@ -139,7 +142,8 @@ export class WaxActivateRequisition {
     );
     return new Promise((resolve, reject) => {
       let subscription;
-      console.log(`start listening...`)
+      const currentTxInfo = txInfo;
+      console.log(`start listening on ${channelName} with transaction ID = ${currentTxInfo.id}...`)
       try {
         const query = `
             subscription Subscribe2channel($name: String!) {
@@ -169,21 +173,34 @@ export class WaxActivateRequisition {
         ).subscribe({
           next: ({ provider: _, value }) => {
             const txRes: TransactionMessage = JSON.parse(value.data.subscribe2channel.data);
-            switch (txRes.status) {
+            if(txRes.id !== currentTxInfo.id) {
+              return;
+            }
+
+            switch (txRes.type) {
               case 'requesting':
                 console.log('tx requesting...');
                 break;
               case 'approved':
                 resolve(txRes);
+                subscription?.unsubscribe();
                 break;
               case'rejected':
                 reject(new Error('User rejected the transaction'));
+                subscription?.unsubscribe();
+                break;
+              case 'ready':
+                // ignore
+                break;
+              case 'error':
+                subscription?.unsubscribe();
                 break;
               default:
-                reject(new Error('Unknown status'));
+                // reject(new Error('Unknown status'));
+                console.log(`Unknown status: ${JSON.stringify(txRes)}`);
                 break;
             }
-            subscription?.unsubscribe();
+            // subscription?.unsubscribe();
           },
           error: error => {
             subscription?.unsubscribe();
