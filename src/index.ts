@@ -184,7 +184,7 @@ export class WaxJS {
         myHeaders.append("Authorization", `Bearer ${this.user.token}`);;
 
         fetch(`${this.activationEndpoint}/dapp/logout`, {
-          method: "GET",
+          method: "DELETE",
           headers: myHeaders,
           redirect: "follow"
         })
