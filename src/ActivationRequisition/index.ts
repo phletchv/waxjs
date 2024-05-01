@@ -54,6 +54,7 @@ export interface TransactionMessage {
   id: string;
   type: 'requesting' | 'approved' | 'rejected' | 'error' | 'ready' | 'not-ready';
   actions?: any;
+  namedParams?: any;
   dapp?: string;
   result?: any;
 }
@@ -115,14 +116,15 @@ export class WaxActivateRequisition {
     return this.checkActivation(requisitionInfo);
   }
 
-  public async signTransaction(transaction: any) {
-    // const activatedDate = JSON.parse(localStorage.getItem(LS_ACTIVATION_KEY));
+  public async signTransaction(transaction: any, namedParams: any) {
+    console.log('signTransaction::', {transaction, namedParams});
     const { token } = this.user;
     const channelName = `tx_dapp_noti_${this.user.account}`;
     const txInfo: TransactionMessage = {
       id: uuidv4(),
       type: 'requesting',
       actions: transaction,
+      namedParams,
       dapp: document.location.host
     };
     API.graphql(

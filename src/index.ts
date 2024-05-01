@@ -297,7 +297,7 @@ export class WaxJS {
     const _this = this;
     this.api.transact = async (transaction, namedParams) => {
       if(this.user?.token) {
-        return await _this.waxActivateRequisition.signTransaction(transaction)
+        return await _this.waxActivateRequisition.signTransaction(transaction, namedParams)
       } else {
         await this.signingApi.prepareTransaction(transaction);
         return await transact(transaction, namedParams);
